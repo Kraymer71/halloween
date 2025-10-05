@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Halloween House Map{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Halloween House Map</h1>
+      <a class="btn" href="{{ url_for('new_listing') }}">List your house</a>
+    </header>
+    {% block content %}{% endblock %}
+    <footer>© {{ year }} Halloween House Map</footer>
+  </body>
+</html>

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Halloween House Map{% endblock %}
+{% block content %}
+<div class="container grid two">
+  <div class="card">
+    <label>Date</label>
+    <input class="input" type="date" id="dateInput" value="{{ today }}" />
+
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn" id="locateBtn">Use my location</button>
+      <select class="input" style="max-width:140px" id="radiusSelect">
+        <option>3</option><option selected>5</option><option>10</option><option>15</option><option>20</option>
+      </select>
+      <button class="btn secondary" id="clearBtn" style="display:none">Clear</button>
+    </div>
+    <small style="opacity:.7">Shows houses within this radius around you.</small>
+  </div>
+
+  <div class="card">
+    <p>Tap houses to see details. Drag/zoom the map to refresh results in view.</p>
+    <div id="map" style="height:60vh;width:100%"></div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <h3>Houses on this date <span id="nearLabel"></span></h3>
+    <div class="list" id="chips"></div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_CENTER = "{{ default_center }}".split(',').map(parseFloat);
+const DEFAULT_ZOOM = {{ default_zoom }};
+
+let map, myMarker, myCircle;
+let myLocation = null;
+let bbox = null;
+let pumpkinIcon = L.icon({ iconUrl: "{{ url_for('static', filename='pumpkin.svg') }}", iconSize: [36,36], iconAnchor:[18,30], popupAnchor:[0,-28] });
+
+function initMap() {
+  map = L.map('map').setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  map.on('moveend', () => {
+    const b = map.getBounds();
+    bbox = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+    if (!myLocation) loadListings(); // only bbox-mode when no geoloc
+  });
+  loadListings();
+}
+
+function setMyLocation(lat, lng) {
+  myLocation = {lat, lng};
+  if (myMarker) { map.removeLayer(myMarker); map.removeLayer(myCircle); }
+  myMarker = L.circleMarker([lat, lng], { radius:6 }).addTo(map);
+  myCircle = L.circle([lat, lng], { radius: getRadiusKm()*1000 }).addTo(map);
+  map.setView([lat, lng], 12);
+  document.getElementById('clearBtn').style.display = 'inline-block';
+  document.getElementById('nearLabel').textContent = '(near you)';
+  loadListings();
+}
+
+function clearMyLocation() {
+  myLocation = null;
+  if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
+  if (myCircle) { map.removeLayer(myCircle); myCircle = null; }
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('nearLabel').textContent = '';
+  map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+  loadListings();
+}
+
+function getDate() { return document.getElementById('dateInput').value; }
+function getRadiusKm() { return parseFloat(document.getElementById('radiusSelect').value || '5'); }
+
+async function loadListings() {
+  const params = new URLSearchParams();
+  params.set('date', getDate());
+  if (myLocation) {
+    params.set('near', myLocation.lat + ',' + myLocation.lng);
+    params.set('radius_km', getRadiusKm());
+  } else if (bbox) {
+    params.set('bbox', bbox.join(','));
+  }
+  const res = await fetch('/api/listings?' + params.toString());
+  const rows = await res.json();
+
+  // clear markers except my location
+  map.eachLayer(function(layer){ if (layer instanceof L.Marker && layer !== myMarker) map.removeLayer(layer); });
+  rows.forEach(r => {
+    const m = L.marker([r.lat, r.lng], { icon: pumpkinIcon }).addTo(map);
+    let html = '<strong>'+r.title+'</strong><br/>';
+    if (r.suburb) html += r.suburb + ' · ';
+    if (r.open_from && r.open_to) html += r.open_from + '-' + r.open_to;
+    if (r.photo_url) html += '<br/><img src="'+r.photo_url+'" style="max-width:180px;border-radius:6px;margin-top:6px"/>';
+    m.bindPopup(html);
+  });
+
+  // chips
+  const chips = document.getElementById('chips');
+  chips.innerHTML='';
+  rows.forEach(r => {
+    let txt = r.title;
+    if (r.suburb) txt += ' • ' + r.suburb;
+    if (typeof r.distance_km === 'number') txt += ' • ' + r.distance_km.toFixed(1) + ' km';
+    if (r.open_from && r.open_to) txt += ' • ' + r.open_from + '-' + r.open_to;
+    const span = document.createElement('div');
+    span.className = 'badge';
+    span.textContent = txt;
+    chips.appendChild(span);
+  });
+}
+
+document.getElementById('locateBtn').addEventListener('click', () => {
+  if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+  navigator.geolocation.getCurrentPosition(
+    pos => setMyLocation(pos.coords.latitude, pos.coords.longitude),
+    err => alert('Could not get your location: ' + err.message),
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+document.getElementById('clearBtn').addEventListener('click', clearMyLocation);
+document.getElementById('radiusSelect').addEventListener('change', () => {
+  if (myLocation && myCircle) { myCircle.setRadius(getRadiusKm()*1000); }
+  loadListings();
+});
+document.getElementById('dateInput').addEventListener('change', loadListings);
+
+initMap();
+</script>
+{% endblock %}
