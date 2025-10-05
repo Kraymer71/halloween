@@ -7,7 +7,7 @@ import L from 'leaflet';
 
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-let DefaultIcon = L.icon({ iconUrl, shadowUrl: iconShadow });
+const DefaultIcon = L.icon({ iconUrl: iconUrl as unknown as string, shadowUrl: iconShadow as unknown as string });
 (L.Marker.prototype as any).options.icon = DefaultIcon;
 
 type Listing = {

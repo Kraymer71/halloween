@@ -1,9 +1,9 @@
 {
-  "name": "halloween-map-directus-snake",
+  "name": "halloween-map-directus-updated",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
- "scripts": {
+  "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p $PORT",
@@ -13,18 +13,19 @@
     "node": "20.x"
   },
   "dependencies": {
+    "leaflet": "1.9.4",
     "next": "14.2.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "leaflet": "1.9.4",
     "react-leaflet": "4.2.1"
   },
   "devDependencies": {
+    "@types/leaflet": "1.9.12",
     "@types/node": "20.11.30",
     "@types/react": "18.2.66",
     "@types/react-dom": "18.2.22",
-    "typescript": "5.4.5",
     "eslint": "8.57.0",
-    "eslint-config-next": "14.2.5"
+    "eslint-config-next": "14.2.5",
+    "typescript": "5.4.5"
   }
 }

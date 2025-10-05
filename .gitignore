@@ -1,11 +1,9 @@
-# Node / Next.js
 node_modules/
 .next/
 out/
-npm-debug.log*
-yarn-error.log*
 dist/
 .env
 .env.local
+npm-debug.log*
+yarn-error.log*
 .DS_Store
-EOF
