@@ -1,0 +1,11 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-error.log*
+dist/
+.env
+.env.local
+.DS_Store
+EOF
