@@ -14,6 +14,17 @@ export default function NewListingPage() {
   const center = useDefaultCenter();
   const [pin, setPin] = useState<{lat:number,lng:number}|null>(center);
   const [photo, setPhoto] = useState<File | null>(null);
+  const [locating, setLocating] = useState(false);
+
+  function useMyLocation() {
+    if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => { setPin({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setLocating(false); },
+      err => { alert('Could not get your location: ' + err.message); setLocating(false); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
 
   async function uploadPhoto() {
     if (!photo) return '';
@@ -27,20 +38,18 @@ export default function NewListingPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const data = Object.fromEntries(new FormData(form).entries());
     if (!pin) { alert('Please drop a pin on the map'); return; }
 
+    const form = e.target as HTMLFormElement;
+    const data = Object.fromEntries(new FormData(form).entries());
     const photo_url = photo ? (await uploadPhoto()) : '';
 
     const payload = {
       title: data.title,
       description: data.description || '',
       lat: pin.lat, lng: pin.lng,
-      street: data.street || '', suburb: data.suburb || '', state: data.state || '', postcode: data.postcode || '',
-      start_date: data.start_date, end_date: data.end_date,
-      open_from: data.open_from || '', open_to: data.open_to || '',
-      tags: (data.tags as string || '').split(',').filter(Boolean),
+      open_from: data.open_from || '',
+      open_to: data.open_to || '',
       scare_level: Number(data.scare_level || 2),
       photo_url
     };
@@ -77,17 +86,6 @@ export default function NewListingPage() {
 
             <div className="two">
               <div>
-                <label>Start date</label>
-                <input className="input" type="date" name="start_date" required/>
-              </div>
-              <div>
-                <label>End date</label>
-                <input className="input" type="date" name="end_date" required/>
-              </div>
-            </div>
-
-            <div className="two">
-              <div>
                 <label>Open from (optional)</label>
                 <input className="input" type="time" name="open_from"/>
               </div>
@@ -97,36 +95,16 @@ export default function NewListingPage() {
               </div>
             </div>
 
-            <div className="two">
-              <div>
-                <label>Street (optional)</label>
-                <input className="input" name="street"/>
-              </div>
-              <div>
-                <label>Suburb (optional)</label>
-                <input className="input" name="suburb"/>
-              </div>
-            </div>
-
-            <div className="two">
-              <div>
-                <label>State</label>
-                <input className="input" name="state"/>
-              </div>
-              <div>
-                <label>Postcode</label>
-                <input className="input" name="postcode"/>
-              </div>
-            </div>
-
-            <div>
-              <label>Tags (comma separated)</label>
-              <input className="input" name="tags" placeholder="decorated,trick-or-treat,allergy-friendly"/>
-            </div>
-
             <div>
               <label>Photo (optional)</label>
               <input className="input" type="file" accept="image/*" onChange={e=>setPhoto(e.target.files?.[0]||null)}/>
+            </div>
+
+            <div style={{display:'flex', gap:8}}>
+              <button className="btn secondary" type="button" onClick={useMyLocation} disabled={locating}>
+                {locating ? 'Locating…' : 'Use my location'}
+              </button>
+              <span style={{opacity:.7}}>Tap the map to move the pin.</span>
             </div>
 
             <button className="btn" type="submit">Submit for approval</button>
@@ -134,14 +112,12 @@ export default function NewListingPage() {
         </div>
 
         <div className="card">
-          <p>Drop a pin on your house's location (approximate is OK; we'll jitter it on the public map).</p>
           <Map listings={pin? [{
             id: 'preview',
             title: 'Your pin',
             lat: pin.lat,
             lng: pin.lng,
             scare_level: 2,
-            tags: [],
             start_date: '',
             end_date: ''
           }] : []} onClickSetPin={(latlng)=>setPin(latlng)} />

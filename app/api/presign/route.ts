@@ -10,7 +10,6 @@ function hmacSHA1(keyBuf: Buffer, str: string) {
   return crypto.createHmac('sha1', keyBuf).update(str).digest('base64');
 }
 
-// DigitalOcean Spaces v2 presign for PUT
 export async function POST(req: NextRequest) {
   try {
     const { filename, contentType } = await req.json();
